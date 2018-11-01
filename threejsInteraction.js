@@ -7,9 +7,14 @@ var logs = [];
 var logsColaiders = [];
 var trees = [];
 var treesColaiders = [];
+var watterColaiders = [];
 var horseColaider;
 var mapIndex = 0;
 var MAP_TYPES = {GRASS:0,STREET:11,WATER:2};
+
+var lives = 6;
+var gamePoints = 0;
+
 function createScene(canvas){
   console.log("createScene");
   renderer = new THREE.WebGLRenderer( { canvas: canvas, antialias: true } );
@@ -86,8 +91,13 @@ function loadMapPart(index){
     loadTrees(mapGroup);
   if(mapType == MAP_TYPES.STREET)
     loadCars(mapGroup);
-    if(mapType == MAP_TYPES.WATER)
+  if(mapType == MAP_TYPES.WATER){
+    let watterBBox = new THREE.BoxHelper(mesh, 0x00ff00);
+    watterBBox.update();
+    watterBBox.visible = false;
+    watterColaiders.push(watterBBox);
     loadLogs(mapGroup);
+  }
   scene.add(mapGroup);
 }
 
@@ -206,7 +216,29 @@ function initEventListeners(){
   playButton.click((evento)=>{
     isPlaying = true;
     $('.overlay').hide();
+    $('#playButton').hide();
   });
+  updateLives();
+  $('#gameOver').hide();
+}
+
+
+function updateLives(){
+  console.log("updateLives",lives);
+  $("#liveLabel").text(""+(--lives));
+  if(lives==0)
+  showGameOver();
+}
+
+function updatePoints(isPositive){
+  gamePoints+=(isPositive?10:-10);
+  $("#pointsLabel").text(""+gamePoints);
+}
+
+function showGameOver(){
+  $('.overlay').show();
+  $('#gameOver').show();
+  isPlaying = false;
 }
 
 function run(){

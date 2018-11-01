@@ -2,7 +2,8 @@ var animator, rotateAnimator, cameraAnimator;
 var currentTime = Date.now();
 var isPlayingAnimation = false;
 var horseLastPositionZ = 0;
-
+var horseWatterColide = false;
+var horseLogColide = false;
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
@@ -63,6 +64,8 @@ function checkColisions(){
     var horseBox = new THREE.Box3().setFromObject(horseColaider);
     checkModelColiders(horseBox, carsColaiders);
     checkModelColiders(horseBox, treesColaiders);
+    checkHorseWatterColliders(horseBox, watterColaiders);
+    checkHorseLogsColliders(horseBox, logsColaiders);
   }
 }
 function checkModelColiders(horseBox, colaidersList){
@@ -76,6 +79,41 @@ function checkModelColiders(horseBox, colaidersList){
     resolve();
   });
 }
+function checkHorseWatterColliders(horseBox, colaidersList){
+  return new Promise((resolve,reject)=>{
+    // console.log("checkHorseWatterColliders, promise");
+    horseWatterColide = false
+    for(let modColider of colaidersList){
+      modColider.update();
+      horseWatterColide = horseBox.intersectsBox(new THREE.Box3().setFromObject(modColider))?true:horseWatterColide;
+    }
+    resolve();
+  });
+}
+var colideCurrentTime = 0;
+function checkHorseLogsColliders(horseBox, colaidersList){
+  return new Promise((resolve,reject)=>{
+    // console.log("checkHorseLogsColliders, promise");
+    horseLogColide = false;
+    let now = Date.now();
+    let deltat = now - colideCurrentTime;
+
+    for(let modColider of colaidersList){
+      modColider.update();
+      horseLogColide = horseBox.intersectsBox(new THREE.Box3().setFromObject(modColider))?true:horseLogColide;
+    }
+    if(horseWatterColide){
+      if(!horseLogColide){
+        console.log("deltat",deltat);
+        if(deltat>2000){
+          updateLives();
+          colideCurrentTime = now;
+        }
+      }
+    }
+    resolve();
+  });
+}
 
 
 function horseColision(){
@@ -85,6 +123,8 @@ function horseColision(){
   if((horse.position.z*-1)==(horseLastPositionZ)){
     moveCamera(false);
     horseLastPositionZ -=20;
+    updateLives();
+    updatePoints(false);
   }
 
 }
@@ -156,6 +196,7 @@ function playHorseAnimation(keyCode){
       rotateAnimator.start();
       break;
     case 38: // UP
+      updatePoints(true);
       if(horseStatus==ROTATE_STATUS.RIGHT){
         // console.log("1",(horseRotationStart % Math.PI/2));
         animator.interps[0].values[0].z = horse.position.z;
