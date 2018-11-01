@@ -1,6 +1,11 @@
-var animator, rotateAnimator;
+var animator, rotateAnimator, cameraAnimator;
 var currentTime = Date.now();
-var isPlaying = false;
+var isPlayingAnimation = false;
+var horseLastPositionZ = 0;
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
 
 function initAnimations(){
   animator = new KF.KeyFrameAnimator;
@@ -14,6 +19,12 @@ function initAnimations(){
         ],
       },
     ],
+    loop: false,
+    duration: 0.5 * 1000,
+  });
+  cameraAnimator = new KF.KeyFrameAnimator;
+  cameraAnimator.init({
+    interps:[{keys:[0, 1],values: [{z:0},{z:-30}]}],
     loop: false,
     duration: 0.5 * 1000,
   });
@@ -47,10 +58,12 @@ function animate(){
 }
 
 function checkColisions(){
-  horseColaider.update();
-  var horseBox = new THREE.Box3().setFromObject(horseColaider);
-  checkModelColiders(horseBox, carsColaiders);
-  checkModelColiders(horseBox, treesColaiders);
+  if(horseColaider){
+    horseColaider.update();
+    var horseBox = new THREE.Box3().setFromObject(horseColaider);
+    checkModelColiders(horseBox, carsColaiders);
+    checkModelColiders(horseBox, treesColaiders);
+  }
 }
 function checkModelColiders(horseBox, colaidersList){
   return new Promise((resolve,reject)=>{
@@ -66,15 +79,21 @@ function checkModelColiders(horseBox, colaidersList){
 
 
 function horseColision(){
-  console.log("horseColision");
+  // console.log("horseColision");
   horse.position.z+=20;
+  // console.log("horse.z",horse.position.z,horseLastPositionZ);
+  if((horse.position.z*-1)==(horseLastPositionZ)){
+    moveCamera(false);
+    horseLastPositionZ -=20;
+  }
+
 }
 
 function animateCars(deltat){
   for(let car of cars){
     // if(!tempo)
     // console.log("horse",horse);
-    car.position.x +=  deltat * ((Math.floor(Math.random() * (4 - 3 + 1)) + 3)/100);
+    car.position.x +=  deltat * (getRandomInt(3,4)/100);
     if(car.position.x > 170){
       // console.log("horse",horse);
       car.position.x = -170 - Math.random() * 50;
@@ -88,7 +107,7 @@ function animateLogs(deltat){
   for(let log of logs){
     // if(!tempo)
     // console.log("horse",horse);
-    log.position.x +=  deltat * ((Math.floor(Math.random() * (4 - 3 + 1)) + 3)/100);
+    log.position.x +=  deltat * (getRandomInt(3,4)/100);
     if(log.position.x > 170){
       // console.log("horse",horse);
       log.position.x = -170 - Math.random() * 50;
@@ -105,15 +124,23 @@ var ROTATE_STATUS = {
   DOWN: 4
 }
 var horseStatus = ROTATE_STATUS.FRONT;
+
 function playHorseAnimation(keyCode){
-  if(isPlaying)
+  if(isPlayingAnimation)
   return;
-  isPlaying = true;
+  // console.log("horse.z",horse.position.z,horseLastPositionZ);
+  if(Math.abs((horse.position.z*-1)-horseLastPositionZ)>30){
+    moveCamera(((horse.position.z*-1)-horseLastPositionZ)>0);
+    horseLastPositionZ = (horse.position.z*-1);
+    loadMapPart(++mapIndex);
+  }
+
+  isPlayingAnimation = true;
   if([37,38,39,40].includes(keyCode)){
     horseAnimation.play();
     setTimeout(()=>{
       horseAnimation.stop();
-      isPlaying = false;
+      isPlayingAnimation = false;
     },0.6*1000);
   }
   // console.log("playHorseAnimation",keyCode);
@@ -179,4 +206,13 @@ function playHorseAnimation(keyCode){
   // console.log("horse",horse.position);
   // console.log("animator.interps",animator.interps);
   // console.log("rotateAnimator.interps",rotateAnimator.interps);
+}
+
+function moveCamera(moveForward){
+  // console.log("moveCamera",camera.position.z);
+   let cameraPos = camera.position.z;
+  cameraAnimator.interps[0].values[0].z = cameraPos;
+  cameraAnimator.interps[0].values[1].z = cameraPos+(moveForward?-40:40);
+  // console.log("cameraAnimator.interps[0]",cameraAnimator.interps[0]);
+  cameraAnimator.start();
 }

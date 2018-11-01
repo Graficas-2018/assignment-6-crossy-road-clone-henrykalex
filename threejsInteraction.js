@@ -8,7 +8,7 @@ var logsColaiders = [];
 var trees = [];
 var treesColaiders = [];
 var horseColaider;
-
+var mapIndex = 0;
 var MAP_TYPES = {GRASS:0,STREET:11,WATER:2};
 function createScene(canvas){
   console.log("createScene");
@@ -42,12 +42,12 @@ function createScene(canvas){
   mixer = new THREE.AnimationMixer( scene );
 
   // loadMap();
-  loadMapPart(0);
-  loadMapPart(1);
-  loadMapPart(2);
-  loadMapPart(3);
-  loadMapPart(4);
-  loadMapPart(5);
+  loadMapPart(mapIndex);
+  loadMapPart(++mapIndex);
+  loadMapPart(++mapIndex);
+  loadMapPart(++mapIndex);
+  loadMapPart(++mapIndex);
+  loadMapPart(++mapIndex);
   loadHorse();
 
   initEventListeners();
@@ -60,6 +60,7 @@ var planeGrassGeometry = new THREE.BoxGeometry( 400, 2, mapSectionWidth );
 var planeStreetGeometry = new THREE.BoxGeometry( 400, 1, mapSectionWidth );
 
 function loadMapPart(index){
+  console.log("loadMapPart",index);
   let mapGroup = new THREE.Object3D;
   let color;
   let plane = mapType != MAP_TYPES.GRASS?planeStreetGeometry:planeGrassGeometry;
@@ -74,7 +75,6 @@ function loadMapPart(index){
     color = 0x2bd845;
   }
   mesh = new THREE.Mesh(plane,new THREE.MeshPhongMaterial({color:color, side:THREE.DoubleSide}));
-  // TODO Algoritmo de avance
   // Generar un mapa de acuerdo al índice
   mesh.castShadow = false;
   mesh.receiveShadow = true;
@@ -192,11 +192,21 @@ function loadHorse(){
     // console.log(gltf.animations);
     animator.interps[0].target = horse.position;
     rotateAnimator.interps[0].target = horse.rotation;
+    cameraAnimator.interps[0].target = camera.position;
   });
 }
 
 function initEventListeners(){
   document.addEventListener('keyup', onDocumentKeyUp);
+  let playButton = $('#playButton');
+  let resetButton = $('#resetButton');
+  resetButton.click(()=>{
+    location.reload();
+  });
+  playButton.click((evento)=>{
+    isPlaying = true;
+    $('.overlay').hide();
+  });
 }
 
 function run(){
@@ -208,6 +218,7 @@ function run(){
 }
 
 function onDocumentKeyUp(event){
-  // console.log("onDocumentKeyUp",event);
+  console.log("onDocumentKeyUp",event);
+  if(isPlaying)
   playHorseAnimation(event.keyCode);
 }
